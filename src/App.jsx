@@ -20,7 +20,6 @@ function App() {
     function keyDownHandler(e) {
 
         if (e.key === "Enter" && statusRef.current === "gameOver") {
-            console.log("Game over");
             e.preventDefault();
             restartGame();
         }
@@ -54,7 +53,7 @@ function App() {
     useEffect(() => {
         groundOffsetRef.current = gameState.groundOffset;
         statusRef.current = gameState.status;
-        console.log("sync effect, new status:", gameState.status);
+
     }, [gameState]);
 
     useEffect(() => {
@@ -106,6 +105,7 @@ function App() {
                 let frameCount = prev.frameCount + 1;
                 let lastSpawnFrame = prev.lastSpawnFrame;
                 let spawnThreshold = prev.spawnThreshold;
+                let score = prev.score + 1; // Increment score every tick
 
                 let obstacles = prev.obstacles.map(obstacle => ({ ...obstacle, x: obstacle.x - 5 }));
                 obstacles = obstacles.filter(obstacle => obstacle.x > -50);
@@ -134,7 +134,7 @@ function App() {
                     spawnThreshold = Math.floor(Math.random() * (150 - 80)) + 80; // random threshold between 80 and 150 frames
                 }
 
-                return { ...prev, groundOffset, velocity, frameCount, obstacles, lastSpawnFrame, spawnThreshold };
+                return { ...prev, groundOffset, velocity, frameCount, obstacles, lastSpawnFrame, spawnThreshold, score };
             });
         }, 20); // every 20ms
 
@@ -149,6 +149,11 @@ function App() {
         <div id="game-area">
             <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px` }}>
             </div>
+            {gameState.status === "running" && gameState.score > 0 && (
+                <div id="score">
+                    PUNTOS: {gameState.score}
+                </div>
+            )}
             {gameState.obstacles.map(obstacle => (
                 <div
                     key={obstacle.id}
@@ -159,9 +164,9 @@ function App() {
 
             {gameState.status === "gameOver" && (
                 <div id="game-over">
-                    <h1>Finiu</h1>
+                    <h1>Finiu cun {gameState.score} puntos</h1>
                     <h2>Ses ruttu!</h2>
-                    <button onClick={() => restartGame()}>Restart</button>
+                    <button onClick={() => restartGame()}>Incumintza de nou</button>
                 </div>
             )}
         </div>
