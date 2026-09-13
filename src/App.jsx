@@ -35,6 +35,8 @@ function App() {
             setGameState(prevState => ({ ...prevState, velocity: 18 }));
 
         }
+
+
     }
 
     function touchHandler() {
@@ -52,6 +54,7 @@ function App() {
     useEffect(() => {
         groundOffsetRef.current = gameState.groundOffset;
         statusRef.current = gameState.status;
+        console.log("sync effect, new status:", gameState.status);
     }, [gameState]);
 
     useEffect(() => {
@@ -83,7 +86,7 @@ function App() {
             frameCount: 0,
             lastSpawnFrame: 0,
             spawnThreshold: 100, // frames between spawns
-            status: "idle"
+            status: "running"
         });
         nextObstacleId.current = 0; // reset the obstacle ID counter
     }
@@ -94,9 +97,9 @@ function App() {
 
         const intervalId = setInterval(() => {
             setGameState(prev => {
-                if (prev.status === "gameOver") {
-                    return prev; // Stop updating if game is over
-                }   
+                if (prev.status !== "running") {
+                    return prev; // Update only while actually running
+                }
 
                 let velocity = prev.velocity - gravity;
                 let groundOffset = prev.groundOffset + velocity;
