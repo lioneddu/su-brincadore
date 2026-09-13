@@ -4,18 +4,23 @@ import './App.css'
 function App() {
     const initialGroundOffset = 5;
     const groundOffsetRef = useRef(initialGroundOffset);
+    const nextObstacleId = useRef(0); // change this to useRef to persist the value across renders
     const [gameState, setGameState] = useState({
         groundOffset: initialGroundOffset,
         velocity: 0,
-        score: 0
+        score: 0,
+        obstacles: [],
+        frameCount: 0,
+        lastSpawnFrame: 0,
+        spawnThreshold: 100, // frames between spawns    
     });
 
     function keyDownHandler(e) {
-        console.log("KeyDown");
+
         if ((e.key === "Enter" || e.key === " " || e.key === "ArrowUp") && groundOffsetRef.current === initialGroundOffset) {
             e.preventDefault();
             setGameState(prevState => ({ ...prevState, velocity: 18 }));
-            console.log("Enter or space");
+
         }
     }
 
@@ -37,17 +42,29 @@ function App() {
 
         const intervalId = setInterval(() => {
             setGameState(prev => {
-                // 1. calculate the new velocity by subtracting gravity from the previous velocity
+
                 let velocity = prev.velocity - gravity;
-                // 2. calculate the new groundOffset by adding the updated velocity
                 let groundOffset = prev.groundOffset + velocity;
-                // 3. if the new groundOffset is below groundLevel, "clamp" it to groundLevel and reset velocity
+                let frameCount = prev.frameCount + 1;
+                let lastSpawnFrame = prev.lastSpawnFrame;
+                let spawnThreshold = prev.spawnThreshold;
+
+                let obstacles = prev.obstacles.map(obstacle => ({ ...obstacle, x: obstacle.x - 5 }));
+                obstacles = obstacles.filter(obstacle => obstacle.x > -50);
+
                 if (groundOffset < groundLevel) {
                     groundOffset = groundLevel;
                     velocity = 0;
                 }
-                // 4. return the new state object with spread operator + the updated properties
-                return { ...prev, groundOffset, velocity };
+
+                if (frameCount - prev.lastSpawnFrame >= spawnThreshold) {
+                    nextObstacleId.current += 1;
+                    obstacles.push({ id: nextObstacleId.current, x: 800, type: 'dry-stone-wall' });
+                    lastSpawnFrame = frameCount;
+                    spawnThreshold = Math.floor(Math.random() * (150 - 80)) + 80; // random threshold between 80 and 150 frames
+                }
+
+                return { ...prev, groundOffset, velocity, frameCount, obstacles, lastSpawnFrame, spawnThreshold };
             });
         }, 20); // every 20ms
 
@@ -58,6 +75,13 @@ function App() {
         <div id="game-area">
             <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px` }}>
             </div>
+            {gameState.obstacles.map(obstacle => (
+                <div
+                    key={obstacle.id}
+                    className={`obstacle ${obstacle.type}`}
+                    style={{ left: `${obstacle.x}px` }}
+                />
+            ))}
         </div>
     )
 }
