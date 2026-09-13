@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
+const OBSTACLE_TYPES = {
+    'dry-stone-wall': { width: 50, height: 70 },
+    'sheep': { width: 70, height: 45 },
+    'wild-boar': { width: 80, height: 50 } 
+};
+
+function checkCollision(Rectangle1, Rectangle2) {
+    return (
+        Rectangle1.x < Rectangle2.x + Rectangle2.width &&
+        Rectangle1.x + Rectangle1.width > Rectangle2.x &&
+        Rectangle1.y < Rectangle2.y + Rectangle2.height &&
+        Rectangle1.y + Rectangle1.height > Rectangle2.y
+    );
+}
+
 function App() {
     const initialGroundOffset = 5;
     const groundOffsetRef = useRef(initialGroundOffset);
@@ -16,6 +31,8 @@ function App() {
         spawnThreshold: 100, // frames between spawns   
         status: "idle" 
     });
+
+
 
     function keyDownHandler(e) {
 
@@ -66,14 +83,7 @@ function App() {
         };
     }, []);
 
-    function checkCollision(Rectangle1, Rectangle2) {
-        return (
-            Rectangle1.x < Rectangle2.x + Rectangle2.width &&
-            Rectangle1.x + Rectangle1.width > Rectangle2.x &&
-            Rectangle1.y < Rectangle2.y + Rectangle2.height &&
-            Rectangle1.y + Rectangle1.height > Rectangle2.y
-        );
-    }
+
 
     function restartGame() {
 
@@ -113,12 +123,12 @@ function App() {
                 let brincadoreRectangle = { x: 50, y: groundOffset, width:  60, height:  60 }; // Brincadore
 
                 const collisionDetected = obstacles.some(obstacle => {
-                    let obstacleRectangle = { x: obstacle.x, y: groundLevel, width: 50, height: 70 };
+                    let obstacleRectangle = { x: obstacle.x, y: groundLevel, width: OBSTACLE_TYPES[obstacle.type].width, height: OBSTACLE_TYPES[obstacle.type].height };
                     return checkCollision(brincadoreRectangle, obstacleRectangle);
                 });
 
                 if (collisionDetected) {
-                    return { ...prev, status: "gameOver" }; // Collision detected
+                    return { ...prev, groundOffset, obstacles, status: "gameOver" };
                 }
 
 
@@ -129,7 +139,9 @@ function App() {
 
                 if (frameCount - prev.lastSpawnFrame >= spawnThreshold) {
                     nextObstacleId.current += 1;
-                    obstacles.push({ id: nextObstacleId.current, x: 800, type: 'dry-stone-wall' });
+                    let nextObstacleType = Math.floor(Math.random() * Object.keys(OBSTACLE_TYPES).length);
+                    nextObstacleType = Object.keys(OBSTACLE_TYPES)[nextObstacleType];
+                    obstacles.push({ id: nextObstacleId.current, x: 800, type: nextObstacleType });
                     lastSpawnFrame = frameCount;
                     spawnThreshold = Math.floor(Math.random() * (150 - 80)) + 80; // random threshold between 80 and 150 frames
                 }
@@ -154,13 +166,20 @@ function App() {
                     PUNTOS: {gameState.score}
                 </div>
             )}
-            {gameState.obstacles.map(obstacle => (
-                <div
-                    key={obstacle.id}
-                    className={`obstacle ${obstacle.type}`}
-                    style={{ left: `${obstacle.x}px` }}
-                />
-            ))}
+            {gameState.obstacles.map(obstacle => {
+                const { width, height } = OBSTACLE_TYPES[obstacle.type];
+                return (
+                    <div
+                        key={obstacle.id}
+                        className={`obstacle ${obstacle.type}`}
+                        style={{
+                            left: `${obstacle.x}px`,
+                            width: `${width}px`,
+                            height: `${height}px`
+                        }}
+                    />
+                );
+            })}
 
             {gameState.status === "gameOver" && (
                 <div id="game-over">
