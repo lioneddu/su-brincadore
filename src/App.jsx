@@ -12,6 +12,7 @@ const OBSTACLE_TYPES = {
 
 const BRINCADORE_HITBOX = { offsetX: 21, offsetY: 20, width: 28, height: 65 };
 const DEBUG_HITBOX = false;
+const SCROLL_SPEED = 5;
 
 function checkCollision(Rectangle1, Rectangle2) {
     return (
@@ -23,7 +24,7 @@ function checkCollision(Rectangle1, Rectangle2) {
 }
 
 function App() {
-    const initialGroundOffset = 5;
+    const initialGroundOffset = 35;
     const groundOffsetRef = useRef(initialGroundOffset);
     const statusRef = useRef("idle");
     const nextObstacleId = useRef(0); // change this to useRef to persist the value across renders
@@ -123,7 +124,7 @@ function App() {
                 let spawnThreshold = prev.spawnThreshold;
                 let score = prev.score + 1; // Increment score every tick
 
-                let obstacles = prev.obstacles.map(obstacle => ({ ...obstacle, x: obstacle.x - 5 }));
+                let obstacles = prev.obstacles.map(obstacle => ({ ...obstacle, x: obstacle.x - SCROLL_SPEED }));
                 obstacles = obstacles.filter(obstacle => obstacle.x > -50);
 
                 let brincadoreRectangle = { x: 50 + BRINCADORE_HITBOX.offsetX, y: groundOffset + BRINCADORE_HITBOX.offsetY, width: BRINCADORE_HITBOX.width, height: BRINCADORE_HITBOX.height }; // Brincadore
@@ -133,7 +134,7 @@ function App() {
                     // Offsets are explicit, not centered: they follow where the body mass really is
                     let obstacleRectangle = { x: obstacle.x + offsetX, y: groundLevel + offsetY, width: hitboxWidth, height: hitboxHeight };
                     const hit = checkCollision(brincadoreRectangle, obstacleRectangle);
-                    if (hit) {
+                    if (hit && DEBUG_HITBOX) {
                         console.log('COLLISION type:', obstacle.type);
                         console.log('brincadore rect:', brincadoreRectangle);
                         console.log('obstacle rect:', obstacleRectangle);
@@ -167,13 +168,15 @@ function App() {
         return () => clearInterval(intervalId);
     }, []);
 
-
-
-
+    const frameIndex = gameState.groundOffset > initialGroundOffset ? 0 : Math.floor(gameState.frameCount / 5) % 4; // Change frame every 5 ticks
 
     return (
         <div id="game-area">
-            <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px`, backgroundPositionX: `${-72 * (Math.floor(gameState.frameCount / 5) % 4)}px` }}>
+            <div id="ground" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED) % 384}px` }}>
+            </div>
+            <div id="background" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED * 0.2) % 1024}px` }}>
+            </div>
+            <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px`, backgroundPositionX: `${-72 * frameIndex}px` }}>
             </div>
             {DEBUG_HITBOX && (
                 <div id="brincadore-hitbox" style={{ position: 'absolute', bottom: `${gameState.groundOffset + BRINCADORE_HITBOX.offsetY}px`, left: `${50 + BRINCADORE_HITBOX.offsetX}px`, width: `${BRINCADORE_HITBOX.width}px`, height: `${BRINCADORE_HITBOX.height}px`, border: "1px solid red", pointerEvents: "none", zIndex: 3 }} />
@@ -192,7 +195,8 @@ function App() {
                                 backgroundImage: `url(${image})`,
                                 left: `${obstacle.x}px`,
                                 width: `${width}px`,
-                                height: `${height}px`
+                                height: `${height}px`,
+                                bottom: `${initialGroundOffset}px`
                             }} />
                             {DEBUG_HITBOX && (
                                 <div style={{
