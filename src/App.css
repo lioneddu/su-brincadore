@@ -7,12 +7,14 @@
 }
 
 #brincadore {
-    background-color: red;
+    background-image: url('./assets/brincadore-run-sheet.png');
+    background-size: 288px 100px; /* 4 frames × 72px width, 100px height */
+    background-repeat: no-repeat;
     position: absolute;
     bottom: 5px;
     left: 50px;
-    width: 60px;
-    height: 60px;
+    width: 72px;
+    height: 100px;
     z-index: 2;
 }
 
@@ -33,20 +35,17 @@
     color: black;
 }
 
-.obstacle.dry-stone-wall {
-    background-color: gray;
-    position: absolute;
-    bottom: 5px;
-}
-
-.obstacle.sheep {
-    background-color: white;
-    position: absolute;
-    bottom: 5px;
-}
-
+.obstacle.dry-stone-wall,
+.obstacle.sheep,
 .obstacle.wild-boar {
-    background-color: brown;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     position: absolute;
     bottom: 5px;
+}
+
+.obstacle.sheep,
+.obstacle.wild-boar {
+    transform: scaleX(-1);
 }

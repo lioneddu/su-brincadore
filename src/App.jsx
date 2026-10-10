@@ -1,11 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import './App.css'
+import wallImg from './assets/dry-stone-wall.png';
+import sheepImg from './assets/sheep.png';
+import boarImg from './assets/wild-boar.png';
 
 const OBSTACLE_TYPES = {
-    'dry-stone-wall': { width: 50, height: 70 },
-    'sheep': { width: 70, height: 45 },
-    'wild-boar': { width: 80, height: 50 } 
+    'dry-stone-wall': { width: 105, height: 68, image: wallImg, hitboxWidth: 75, hitboxHeight: 49, offsetX: 14, offsetY: 9 },
+    'sheep': { width: 68, height: 62, image: sheepImg, hitboxWidth: 42, hitboxHeight: 34, offsetX: 16, offsetY: 15 },
+    'wild-boar': { width: 97, height: 66, image: boarImg, hitboxWidth: 57, hitboxHeight: 38, offsetX: 20, offsetY: 15 },
 };
+
+const BRINCADORE_HITBOX = { offsetX: 21, offsetY: 20, width: 28, height: 65 };
+const DEBUG_HITBOX = false;
 
 function checkCollision(Rectangle1, Rectangle2) {
     return (
@@ -120,11 +126,19 @@ function App() {
                 let obstacles = prev.obstacles.map(obstacle => ({ ...obstacle, x: obstacle.x - 5 }));
                 obstacles = obstacles.filter(obstacle => obstacle.x > -50);
 
-                let brincadoreRectangle = { x: 50, y: groundOffset, width:  60, height:  60 }; // Brincadore
+                let brincadoreRectangle = { x: 50 + BRINCADORE_HITBOX.offsetX, y: groundOffset + BRINCADORE_HITBOX.offsetY, width: BRINCADORE_HITBOX.width, height: BRINCADORE_HITBOX.height }; // Brincadore
 
                 const collisionDetected = obstacles.some(obstacle => {
-                    let obstacleRectangle = { x: obstacle.x, y: groundLevel, width: OBSTACLE_TYPES[obstacle.type].width, height: OBSTACLE_TYPES[obstacle.type].height };
-                    return checkCollision(brincadoreRectangle, obstacleRectangle);
+                    const { hitboxWidth, hitboxHeight, offsetX, offsetY } = OBSTACLE_TYPES[obstacle.type];
+                    // Offsets are explicit, not centered: they follow where the body mass really is
+                    let obstacleRectangle = { x: obstacle.x + offsetX, y: groundLevel + offsetY, width: hitboxWidth, height: hitboxHeight };
+                    const hit = checkCollision(brincadoreRectangle, obstacleRectangle);
+                    if (hit) {
+                        console.log('COLLISION type:', obstacle.type);
+                        console.log('brincadore rect:', brincadoreRectangle);
+                        console.log('obstacle rect:', obstacleRectangle);
+                    }
+                    return hit;
                 });
 
                 if (collisionDetected) {
@@ -159,27 +173,42 @@ function App() {
 
     return (
         <div id="game-area">
-            <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px` }}>
+            <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px`, backgroundPositionX: `${-72 * (Math.floor(gameState.frameCount / 5) % 4)}px` }}>
             </div>
+            {DEBUG_HITBOX && (
+                <div id="brincadore-hitbox" style={{ position: 'absolute', bottom: `${gameState.groundOffset + BRINCADORE_HITBOX.offsetY}px`, left: `${50 + BRINCADORE_HITBOX.offsetX}px`, width: `${BRINCADORE_HITBOX.width}px`, height: `${BRINCADORE_HITBOX.height}px`, border: "1px solid red", pointerEvents: "none", zIndex: 3 }} />
+            )}
+
             {gameState.status === "running" && gameState.score > 0 && (
                 <div id="score">
                     PUNTOS: {gameState.score}
                 </div>
             )}
             {gameState.obstacles.map(obstacle => {
-                const { width, height } = OBSTACLE_TYPES[obstacle.type];
-                return (
-                    <div
-                        key={obstacle.id}
-                        className={`obstacle ${obstacle.type}`}
-                        style={{
-                            left: `${obstacle.x}px`,
-                            width: `${width}px`,
-                            height: `${height}px`
-                        }}
-                    />
-                );
-            })}
+                    const { width, height, image, hitboxWidth, hitboxHeight, offsetX, offsetY } = OBSTACLE_TYPES[obstacle.type];
+                    return (
+                        <Fragment key={obstacle.id}>
+                            <div className={`obstacle ${obstacle.type}`} style={{
+                                backgroundImage: `url(${image})`,
+                                left: `${obstacle.x}px`,
+                                width: `${width}px`,
+                                height: `${height}px`
+                            }} />
+                            {DEBUG_HITBOX && (
+                                <div style={{
+                                    position: 'absolute',
+                                    border: '1px solid red',
+                                    left: `${obstacle.x + offsetX}px`,       // same offsets used in the collision check
+                                    bottom: `${initialGroundOffset + offsetY}px`,
+                                    width: `${hitboxWidth}px`,
+                                    height: `${hitboxHeight}px`,
+                                    pointerEvents: 'none'
+                                }} />
+                            )}
+                        </Fragment>
+                    );
+             })}
+           
 
             {gameState.status === "gameOver" && (
                 <div id="game-over">
