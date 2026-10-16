@@ -1,50 +1,23 @@
+/* ---------- Frame (scaled on small screens) and scene ---------- */
+
+#game-frame {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate; /* keeps the rounded clipping reliable with a transformed child (Safari) */
+    border-radius: 18px;
+    box-shadow: 0 0 0 3px rgba(255, 243, 214, 0.12), 0 12px 32px rgba(0, 0, 0, 0.45);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 #game-area {
-    background-color: #d9edf8;
     position: relative;
     width: 800px;
     height: 300px;
-    overflow: hidden; /*hides obstacle when it goes outside the game area*/
-}
-
-#brincadore {
-    background-image: url('./assets/brincadore-run-sheet.png');
-    background-size: 288px 100px; /* 4 frames × 72px width, 100px height */
-    background-repeat: no-repeat;
-    position: absolute;
-    bottom: 5px;
-    left: 50px;
-    width: 72px;
-    height: 100px;
-    z-index: 2;
-}
-
-#game-over {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 20px;
-    color: red;
-}
-
-#score {
-    position: absolute;
-    top: 10px;
-    left: 600px;
-    font-size: 18px;
-    color: black;
-}
-
-#ground {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 41px;
-    background-image: url('./assets/ground-tile.png');
-    background-size: 384px 41px;
-    background-position-y: bottom;
-    background-repeat: repeat-x;
-    z-index: 1;
+    overflow: hidden; /* hides obstacles that leave the area */
+    transform-origin: top left;
+    background-color: var(--sky);
 }
 
 #background {
@@ -59,6 +32,30 @@
     z-index: 0;
 }
 
+#ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 41px;
+    background-image: url('./assets/ground-tile.png');
+    background-size: 384px 41px;
+    background-repeat: repeat-x;
+    background-position-y: bottom;
+    z-index: 1;
+}
+
+#brincadore {
+    background-image: url('./assets/brincadore-run-sheet.png');
+    background-size: 288px 100px; /* 4 frames x 72px width, 100px height */
+    background-repeat: no-repeat;
+    position: absolute;
+    bottom: 5px;
+    left: 50px;
+    width: 72px;
+    height: 100px;
+    z-index: 3;
+}
+
 .obstacle.dry-stone-wall,
 .obstacle.sheep,
 .obstacle.wild-boar {
@@ -66,9 +63,180 @@
     background-repeat: no-repeat;
     background-position: center;
     position: absolute;
+    z-index: 2; /* same layer as the character, so obstacles stand on top of the ground strip */
 }
 
 .obstacle.sheep,
 .obstacle.wild-boar {
     transform: scaleX(-1);
+}
+
+/* ---------- Score ---------- */
+
+#score {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    min-width: 88px;
+    padding: 6px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+    border-radius: 14px;
+    background: rgba(255, 243, 214, 0.88);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+    #score .label {
+        font-size: 0.8rem;
+        color: #6b4a33;
+    }
+
+    #score .value {
+        font-size: 1.6rem;
+        font-weight: 600;
+    }
+
+/* ---------- Shared panel (start screen and game over) ---------- */
+
+.panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    padding: 22px 32px;
+    border-radius: 18px;
+    background: var(--panel);
+    color: var(--cream);
+}
+
+    .panel h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--grass);
+    }
+
+    .panel p {
+        margin: 0;
+    }
+
+    .panel .subtitle {
+        margin-top: 8px;
+        font-size: 1.1rem;
+    }
+
+    .panel .controls {
+        margin-top: 16px;
+        display: grid;
+        gap: 10px;
+    }
+
+    .panel .control-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .panel .final-score {
+        margin-top: 10px;
+        font-size: 3rem;
+        font-weight: 600;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+.muted {
+    font-size: 0.9rem;
+    color: var(--cream-muted);
+}
+
+kbd {
+    display: inline-block;
+    padding: 3px 7px;
+    border-radius: 6px;
+    border: 1px solid #b4b4b4;
+    background-color: #eeeeee;
+    box-shadow: 0 2px 0 0 #9a9a9a;
+    color: #333333;
+    font-family: inherit;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* ---------- Restart button ---------- */
+
+.panel #restart-button {
+    margin: 16px 0 10px;
+    min-height: 48px; /* comfortable touch target */
+    padding: 12px 28px;
+    border: none;
+    border-radius: 50px;
+    background-color: var(--button);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+    .panel #restart-button:hover {
+        transform: scale(1.05);
+        background-color: var(--button-hover);
+    }
+
+    .panel #restart-button:focus-visible {
+        outline: 3px solid var(--cream);
+        outline-offset: 3px;
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .panel #restart-button {
+        transition: none;
+    }
+
+        .panel #restart-button:hover {
+            transform: none;
+        }
+}
+
+/* ---------- Phone portrait hint ---------- */
+
+.rotate-hint {
+    display: none;
+    margin: 0 0 12px;
+    max-width: 320px;
+    font-size: 0.95rem;
+    color: var(--cream-muted);
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+    .rotate-hint {
+        display: block;
+    }
+}
+
+/* ---------- Keyboard vs touch instructions (keep at the end of the file) ---------- */
+
+.panel .touch-only {
+    display: none;
+}
+
+@media (hover: none) {
+    .panel .keyboard-only {
+        display: none;
+    }
+
+    .panel .touch-only {
+        display: revert;
+    }
 }

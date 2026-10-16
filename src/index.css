@@ -1,18 +1,39 @@
-* {
-    box-sizing: border-box;
+:root {
+    /* Palette sampled from the game's own artwork */
+    --sky: #d9edf8;
+    --grass: #a1c686;
+    --dirt: #b1764a;
+    --dirt-light: #cfa47a;
+    /* Page and panels share the same dark earth hue */
+    --earth-dark: #2c1f15;
+    --panel: rgba(44, 31, 21, 0.9);
+    --cream: #fff3d6;
+    --cream-muted: #e6d3b3;
+    --ink: #3a2618;
+    --button: #2e7d32;
+    --button-hover: #1b5e20;
 }
 
-#root {
-    align-items: center;
-    text-align: center;
-    border-inline: 1px solid var(--border);
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
+    background: var(--earth-dark);
+    color: var(--cream);
+    font-family: 'Fredoka', system-ui, sans-serif;
+    touch-action: manipulation; /* avoids the double-tap zoom delay on phones */
 }
 
+#root {
+    min-height: 100svh;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}

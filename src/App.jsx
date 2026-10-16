@@ -13,6 +13,9 @@ const OBSTACLE_TYPES = {
 const BRINCADORE_HITBOX = { offsetX: 21, offsetY: 20, width: 28, height: 65 };
 const DEBUG_HITBOX = false;
 const SCROLL_SPEED = 5;
+const GAME_WIDTH = 800;
+const GAME_HEIGHT = 300;
+const PAGE_MARGIN = 16; // horizontal breathing room around the game on small screens
 
 function checkCollision(Rectangle1, Rectangle2) {
     return (
@@ -23,11 +26,33 @@ function checkCollision(Rectangle1, Rectangle2) {
     );
 }
 
+// Scale factor (never above 1) that makes the fixed-size game area fit the viewport width
+function computeScale() {
+    return Math.min(1, (window.innerWidth - PAGE_MARGIN) / GAME_WIDTH);
+}
+
+// Keeps the scale in sync with window resizes and device rotation
+function useGameScale() {
+    const [scale, setScale] = useState(() => computeScale());
+
+    useEffect(() => {
+        function handleResize() {
+            setScale(computeScale());
+        }
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    return scale;
+}
+
 function App() {
+    const scale = useGameScale();
     const initialGroundOffset = 35;
     const groundOffsetRef = useRef(initialGroundOffset);
     const statusRef = useRef("idle");
-    const nextObstacleId = useRef(0); // change this to useRef to persist the value across renders
+    const nextObstacleId = useRef(0); // useRef so the value persists across renders
     const [gameState, setGameState] = useState({
         groundOffset: initialGroundOffset,
         velocity: 0,
@@ -35,8 +60,8 @@ function App() {
         obstacles: [],
         frameCount: 0,
         lastSpawnFrame: 0,
-        spawnThreshold: 100, // frames between spawns   
-        status: "idle" 
+        spawnThreshold: 100, // frames between spawns
+        status: "idle"
     });
 
 
@@ -156,7 +181,7 @@ function App() {
                     nextObstacleId.current += 1;
                     let nextObstacleType = Math.floor(Math.random() * Object.keys(OBSTACLE_TYPES).length);
                     nextObstacleType = Object.keys(OBSTACLE_TYPES)[nextObstacleType];
-                    obstacles.push({ id: nextObstacleId.current, x: 800, type: nextObstacleType });
+                    obstacles.push({ id: nextObstacleId.current, x: GAME_WIDTH, type: nextObstacleType });
                     lastSpawnFrame = frameCount;
                     spawnThreshold = Math.floor(Math.random() * (150 - 80)) + 80; // random threshold between 80 and 150 frames
                 }
@@ -169,59 +194,86 @@ function App() {
     }, []);
 
     const frameIndex = gameState.groundOffset > initialGroundOffset ? 0 : Math.floor(gameState.frameCount / 5) % 4; // Change frame every 5 ticks
+    const displayScore = Math.floor(gameState.score / 10);
 
     return (
-        <div id="game-area">
-            <div id="ground" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED) % 384}px` }}>
-            </div>
-            <div id="background" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED * 0.2) % 1024}px` }}>
-            </div>
-            <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px`, backgroundPositionX: `${-72 * frameIndex}px` }}>
-            </div>
-            {DEBUG_HITBOX && (
-                <div id="brincadore-hitbox" style={{ position: 'absolute', bottom: `${gameState.groundOffset + BRINCADORE_HITBOX.offsetY}px`, left: `${50 + BRINCADORE_HITBOX.offsetX}px`, width: `${BRINCADORE_HITBOX.width}px`, height: `${BRINCADORE_HITBOX.height}px`, border: "1px solid red", pointerEvents: "none", zIndex: 3 }} />
-            )}
+        <>
+            <p className="rotate-hint">Gira il telefono in orizzontale per giocare meglio.</p>
 
-            {gameState.status === "running" && gameState.score > 0 && (
-                <div id="score">
-                    PUNTOS: {gameState.score}
-                </div>
-            )}
-            {gameState.obstacles.map(obstacle => {
-                    const { width, height, image, hitboxWidth, hitboxHeight, offsetX, offsetY } = OBSTACLE_TYPES[obstacle.type];
-                    return (
-                        <Fragment key={obstacle.id}>
-                            <div className={`obstacle ${obstacle.type}`} style={{
-                                backgroundImage: `url(${image})`,
-                                left: `${obstacle.x}px`,
-                                width: `${width}px`,
-                                height: `${height}px`,
-                                bottom: `${initialGroundOffset}px`
-                            }} />
-                            {DEBUG_HITBOX && (
-                                <div style={{
-                                    position: 'absolute',
-                                    border: '1px solid red',
-                                    left: `${obstacle.x + offsetX}px`,       // same offsets used in the collision check
-                                    bottom: `${initialGroundOffset + offsetY}px`,
-                                    width: `${hitboxWidth}px`,
-                                    height: `${hitboxHeight}px`,
-                                    pointerEvents: 'none'
+            {/* The frame takes the scaled size; the game area keeps its logical 800x300 size inside it */}
+            <div id="game-frame" style={{ width: GAME_WIDTH * scale, height: GAME_HEIGHT * scale }}>
+                <div id="game-area" style={{ transform: `scale(${scale})` }}>
+                    <div id="background" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED * 0.2) % 1024}px` }}>
+                    </div>
+                    <div id="ground" style={{ backgroundPositionX: `${-(gameState.frameCount * SCROLL_SPEED) % 384}px` }}>
+                    </div>
+                    <div id="brincadore" style={{ bottom: `${gameState.groundOffset}px`, backgroundPositionX: `${-72 * frameIndex}px` }}>
+                    </div>
+                    {DEBUG_HITBOX && (
+                        <div id="brincadore-hitbox" style={{ position: 'absolute', bottom: `${gameState.groundOffset + BRINCADORE_HITBOX.offsetY}px`, left: `${50 + BRINCADORE_HITBOX.offsetX}px`, width: `${BRINCADORE_HITBOX.width}px`, height: `${BRINCADORE_HITBOX.height}px`, border: "1px solid red", pointerEvents: "none", zIndex: 3 }} />
+                    )}
+
+                    {gameState.status === "running" && gameState.score > 0 && (
+                        <div id="score">
+                            <span className="label">Puntos</span>
+                            <span className="value">{displayScore}</span>
+                        </div>
+                    )}
+
+                    {gameState.status === "idle" && (
+                        <div id="start" className="panel">
+                            <h1>Su Brincadore</h1>
+                            <p className="subtitle">Brinca sos ostacolos prus chi podese!</p>
+                            <p className="muted">Salta più ostacoli che puoi</p>
+                            <div className="controls keyboard-only">
+                                <p className="control-row"><kbd>Invio</kbd> Cumintza <span className="muted">inizia</span></p>
+                                <p className="control-row"><kbd>Spazio</kbd> o <kbd>&#8593;</kbd> Brinca <span className="muted">salta</span></p>
+                            </div>
+                            <p className="touch-only controls">Tocca lo schermo per iniziare e per saltare</p>
+                        </div>
+                    )}
+
+                    {gameState.obstacles.map(obstacle => {
+                        const { width, height, image, hitboxWidth, hitboxHeight, offsetX, offsetY } = OBSTACLE_TYPES[obstacle.type];
+                        return (
+                            <Fragment key={obstacle.id}>
+                                <div className={`obstacle ${obstacle.type}`} style={{
+                                    backgroundImage: `url(${image})`,
+                                    left: `${obstacle.x}px`,
+                                    width: `${width}px`,
+                                    height: `${height}px`,
+                                    bottom: `${initialGroundOffset}px`
                                 }} />
-                            )}
-                        </Fragment>
-                    );
-             })}
-           
+                                {DEBUG_HITBOX && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        border: '1px solid red',
+                                        left: `${obstacle.x + offsetX}px`,       // same offsets used in the collision check
+                                        bottom: `${initialGroundOffset + offsetY}px`,
+                                        width: `${hitboxWidth}px`,
+                                        height: `${hitboxHeight}px`,
+                                        pointerEvents: 'none'
+                                    }} />
+                                )}
+                            </Fragment>
+                        );
+                    })}
 
-            {gameState.status === "gameOver" && (
-                <div id="game-over">
-                    <h1>Finiu cun {gameState.score} puntos</h1>
-                    <h2>Ses ruttu!</h2>
-                    <button onClick={() => restartGame()}>Incumintza de nou</button>
+                    {gameState.status === "gameOver" && (
+                        <div id="game-over" className="panel">
+                            <h1>Ses ruttu!</h1>
+                            <p className="final-score">{displayScore}</p>
+                            <p className="muted">puntos</p>
+                            <button id="restart-button" onClick={() => restartGame()}>Torra a gioghai</button>
+                            <p className="muted">
+                                <span className="keyboard-only"><kbd>Invio</kbd> per ricominciare</span>
+                                <span className="touch-only">Tocca per ricominciare</span>
+                            </p>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
+            </div>
+        </>
     )
 }
 
